@@ -1,3 +1,32 @@
+# --- set JAVA_HOME otomatis dari 'javac' ---
+import os, shutil, pathlib, subprocess, streamlit as st
+import json
+import time
+import re
+from typing import Any, List, Dict
+
+def _ensure_java_home():
+    javac = shutil.which("javac")
+    if not javac:
+        st.error("JDK tidak ditemukan (javac tidak ada). Pastikan packages.txt berisi 'openjdk-17-jdk-headless'.")
+        st.stop()
+    # /usr/bin/javac -> /usr/lib/jvm/java-17-openjdk-amd64/bin/javac
+    real = pathlib.Path(javac).resolve()
+    java_home = real.parent.parent  # .../jvm/java-17-openjdk-amd64
+    os.environ["JAVA_HOME"] = str(java_home)
+    os.environ["JAVAHOME"] = str(java_home)  # beberapa lib cek VAR ini juga
+    return str(java_home)
+
+JAVA_HOME_SET = _ensure_java_home()
+
+# (opsional) log versi
+try:
+    out = subprocess.check_output(["java", "-version"], stderr=subprocess.STDOUT).decode()
+    st.caption(f"Java ok · JAVA_HOME={JAVA_HOME_SET}")
+except Exception:
+    pass
+
+
 import sys, types
 def _pasang_stub_onnx():
     """Memasang modul palsu 'onnxruntime' agar Pyserini tidak error saat import encoder."""
@@ -15,11 +44,6 @@ except Exception:
     _pasang_stub_onnx()
 # --- Selesai patch stub ---
 
-import json
-import time
-import re
-from typing import Any, List, Dict
-import streamlit as st
 path_indeks = "indexes/idx_contents"
 
 
