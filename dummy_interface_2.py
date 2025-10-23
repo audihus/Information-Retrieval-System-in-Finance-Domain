@@ -1,15 +1,59 @@
-import json
-import time
-import re
+# --- imports standar (tanpa st.* dulu) ---
+import os, shutil, pathlib, subprocess
+import json, time, re, sys, types
 from typing import Any, List, Dict
 import streamlit as st
 
-# -----------------------------
-# Konfigurasi Halaman
-# -----------------------------
+# WAJIB: ini harus jadi perintah Streamlit pertama
 st.set_page_config(page_title="IR UI • Pyserini", page_icon="🔎", layout="wide")
+
+# (baru setelah itu) judul, CSS, dsb.
 st.title("🔎 Information Retrieval System untuk Domain Berita Finance")
-# st.caption("Kelompok Satu")
+
+def _ensure_java_home():
+    javac = shutil.which("javac")
+    if not javac:
+        st.error("JDK tidak ditemukan. Pastikan packages.txt berisi 'openjdk-17-jdk-headless'.")
+        st.stop()
+
+    real = pathlib.Path(javac).resolve()                 # /usr/bin/javac -> .../jvm/java-17-openjdk-amd64/bin/javac
+    java_home = real.parent.parent                       # .../jvm/java-17-openjdk-amd64
+    libserver = java_home / "lib" / "server"             # .../lib/server
+    libjvm = libserver / "libjvm.so"                     # .../lib/server/libjvm.so
+
+    if not libjvm.exists():
+        st.error(f"libjvm.so tidak ditemukan di: {libjvm}\n"
+                 "Pastikan paket JDK (bukan JRE) terpasang: openjdk-17-jdk-headless.")
+        st.stop()
+
+    # Set env untuk loader
+    os.environ["JAVA_HOME"] = str(java_home)
+    os.environ["JAVAHOME"]  = str(java_home)
+    os.environ["PATH"] = f"{java_home}/bin:{libserver}:{os.environ.get('PATH','')}"
+    # LD_LIBRARY_PATH perlu di-set sebelum pyjnius load JVM
+    os.environ["LD_LIBRARY_PATH"] = f"{libserver}:{os.environ.get('LD_LIBRARY_PATH','')}"
+
+    # Hint eksplisit ke pyjnius: gunakan libjvm.so ini
+    try:
+        import jnius_config
+        jnius_config.set_jvm_path(str(libjvm))
+    except Exception:
+        # kalau pyjnius belum terinstall di saat ini, abaikan; Pyserini akan import belakangan
+        pass
+
+    return str(java_home)
+
+JAVA_HOME_SET = _ensure_java_home()
+# opsional: tampilkan versi Java
+try:
+    out = subprocess.check_output(["java", "-version"], stderr=subprocess.STDOUT).decode()
+    st.caption(f"Java OK · JAVA_HOME={JAVA_HOME_SET}")
+except Exception:
+    pass
+
+
+JAVA_HOME_SET = _ensure_java_home()
+
 
 import sys, types
 def _pasang_stub_onnx():
@@ -29,6 +73,7 @@ except Exception:
 # --- Selesai patch stub ---
 
 path_indeks = "indexes/idx_contents"
+
 
 st.markdown(
     """
@@ -60,7 +105,7 @@ def muat_searcher(path_indeks: str) -> Any:
         from pyserini.search.lucene import LuceneSearcher
     except Exception as e:
         st.error(
-            "Gagal mengimpor Pyserini (kemungkinan terkait ONNXRuntime di Windows)."
+            "Gagal mengimpor Pyserini (kemungkinan terkait Java/JDK atau onnxruntime).\n\n"
             f"{type(e).__name__}: {e}"
         )
         st.stop()
@@ -170,21 +215,6 @@ if jalankan:
         "<style>.highlight{background:#fde04733;padding:0 2px;border-radius:4px}</style>",
         unsafe_allow_html=True,
     )
-
-    # helper: highlight + potong snippet rapi
-    def _tokens(s: str):
-        return re.findall(r"[A-Za-z0-9]+", s.lower())
-    query_terms = {t for t in _tokens(q) if len(t) >= 3}
-
-    def potong_kalimat(teks: str, max_words: int = 40) -> str:
-        words = teks.split()
-        return " ".join(words) if len(words) <= max_words else " ".join(words[:max_words]) + " …"
-
-    def highlight_terms(teks: str) -> str:
-        def repl(m):
-            w = m.group(0)
-            return f"<span class='highlight'>{w}</span>" if w.lower() in query_terms else w
-        return re.sub(r"\b[\w-]+\b", repl, teks)
 
     t0 = time.time()
     hasil = lakukan_pencarian(searcher, q, k=top_k)
