@@ -1,45 +1,20 @@
-import os, shutil, pathlib, subprocess
-import json, time, re, sys, types
+import sys, types
+import json
+import time
+import re
 from typing import Any, List, Dict
 import streamlit as st
+
 
 # -----------------------------
 # Konfigurasi Halaman
 # -----------------------------
+path_indeks = "indexes/idx_contents"
+
 st.set_page_config(page_title="IR UI • Pyserini", page_icon="🔎", layout="wide")
 st.title("🔎 Information Retrieval System untuk Domain Berita Finance")
-st.caption("Kelompok Satu")
+# st.caption("Kelompok Satu")
 
-def setup_jvm_cross_platform():
-    if os.name == "nt":
-        # Windows: conda JDK 21
-        CONDA_PREFIX = os.environ.get("CONDA_PREFIX", "")
-        jvm = pathlib.Path(CONDA_PREFIX) / "Library" / "bin" / "server" / "jvm.dll"
-        if not jvm.exists():
-            st.error("Install JDK 21 via conda: `conda install -c conda-forge openjdk=21`")
-            st.stop()
-        os.environ["JAVA_HOME"] = CONDA_PREFIX
-        os.environ["PATH"] = f"{jvm.parent};{os.environ.get('PATH','')}"
-        try:
-            import jnius_config; jnius_config.set_jvm_path(str(jvm))
-        except Exception:
-            pass
-        try:
-            os.add_dll_directory(str(jvm.parent))
-        except Exception:
-            pass
-    else:
-        # Linux: gunakan JDK 21 yang diunduh atau apt (openjdk-17/21 jika tersedia)
-        # kalau kamu sudah punya ensure_jdk21() di Linux, panggil di sini
-        from my_java_bootstrap import ensure_jdk21_ready  # contoh
-        ensure_jdk21_ready()
-
-# panggil SETELAH st.set_page_config(...) tapi SEBELUM import pyserini
-setup_jvm_cross_platform()
-
-
-
-import sys, types
 def _pasang_stub_onnx():
     """Memasang modul palsu 'onnxruntime' agar Pyserini tidak error saat import encoder."""
     stub = types.ModuleType("onnxruntime")
@@ -55,8 +30,6 @@ try:
 except Exception:
     _pasang_stub_onnx()
 # --- Selesai patch stub ---
-
-path_indeks = "indexes/idx_contents"
 
 st.markdown(
     """
@@ -84,13 +57,6 @@ st.markdown(
 @st.cache_resource(show_spinner=False)
 def muat_searcher(path_indeks: str) -> Any:
     """Membuat/caching LuceneSearcher dari path indeks (lazy import)."""
-
-    import shutil, os
-    st.write("which java:", shutil.which("java"))
-    st.write("JAVA_HOME:", os.environ.get("JAVA_HOME"))
-    st.write("LD_LIBRARY_PATH:", os.environ.get("LD_LIBRARY_PATH"))
-    st.write("LIBJVM exists?:", os.path.exists(LIBJVM_21), LIBJVM_21)
-
     try:
         from pyserini.search.lucene import LuceneSearcher
     except Exception as e:
