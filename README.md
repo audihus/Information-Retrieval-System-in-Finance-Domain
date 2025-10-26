@@ -17,13 +17,14 @@ Fitur Utama
 4) Konfigurasi Top-k, panjang snippet, opsi tampilkan skor.
 5) Saran penulisan query agar hasil lebih relevan (entitas, angka, waktu).
 
+```text
 Struktur Direktori (disarankan)
 -------------------------------
 .
 ├─ data/
 │  └─ finance_jsonl/
 │     └─ corpus.jsonl               # Korpus dalam format JSONL (1 dokumen per baris)
-├─ evaluation/                      #
+├─ evaluation/                      # Bahan evaluasi (opsional)
 │  ├─ ground_truth.json             # Ground truth dari query
 │  └─ search_results.json           # Hasil pencarian BM25
 ├─ indexes/
@@ -32,9 +33,8 @@ Struktur Direktori (disarankan)
 ├─ indexing.ipynb                   # Notebook contoh proses indexing dan uji coba pencarian
 ├─ requirements.txt                 # Python requirements
 └─ packages.txt                     # Paket sistem (OS-level) yang diperlukan
+```
 
-
-Persyaratan
 -----------
 Python packages (requirements.txt):
 - streamlit==1.40.2
