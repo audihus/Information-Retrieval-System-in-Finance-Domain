@@ -24,14 +24,15 @@ Struktur Direktori (disarankan)
 │  └─ finance_jsonl/
 │     └─ corpus.jsonl               # Korpus dalam format JSONL (1 dokumen per baris)
 ├─ evaluation/                      #
-│  └─ ground_truth.json             # Ground truth dari query
+│  ├─ ground_truth.json             # Ground truth dari query
 │  └─ search_results.json           # Hasil pencarian BM25
 ├─ indexes/
 │  └─ idx_contents/                 # Hasil indeks Lucene (dibuat oleh proses indexing)
 ├─ user_interface.py                # Aplikasi Streamlit (UI)
 ├─ indexing.ipynb                   # Notebook contoh proses indexing dan uji coba pencarian
-├─ requirements.txt                          # Python requirements
+├─ requirements.txt                 # Python requirements
 └─ packages.txt                     # Paket sistem (OS-level) yang diperlukan
+
 
 Persyaratan
 -----------
